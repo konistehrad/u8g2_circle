@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Thanks, Apple!!
+.DS_Store
+# Thanks, Microsoft!!!
+[Dd]esktop.ini

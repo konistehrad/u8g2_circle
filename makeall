@@ -1,0 +1,15 @@
+#!/bin/bash
+
+make="${MAKE:-make}"
+
+pushd lib
+
+pushd u8g2
+$make $1 $2 || exit
+popd
+
+popd # lib
+
+pushd oledtest
+$make $1 $2 || exit
+popd #oledtest
