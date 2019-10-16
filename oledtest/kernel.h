@@ -59,10 +59,6 @@ public:
   TShutdownMode Run (void);
 
 private:
-  static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
-  static void LeftInterruptHandler (void *pParam);
-  static void RightInterruptHandler (void *pParam);
-
   void DieWithBlinkPattern(uint8_t);
 
   CMemorySystem   m_Memory;
