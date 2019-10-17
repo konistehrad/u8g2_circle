@@ -22,13 +22,16 @@
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-: m_CPUThrottle(CPUSpeedLow),
-  m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
-  m_Serial (&m_Interrupt, FALSE),
+: m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+#if RASPPI >= 4 && AARCH == 64
+  m_Serial (&m_Interrupt, FALSE),   // FIQ not supported
+#else
+  m_Serial (&m_Interrupt, TRUE),
+#endif
   m_Timer (&m_Interrupt),
   m_Logger (m_Options.GetLogLevel(), &m_Timer),
   m_Console (&m_Serial),
-  m_I2CMaster (CMachineInfo::Get()->GetDevice(DeviceI2CMaster), TRUE)
+  m_I2CMaster (CMachineInfo::Get()->GetDevice(DeviceI2CMaster))
 {
 }
 
@@ -51,21 +54,15 @@ boolean CKernel::Initialize (void)
 
   if (bOK)
   {
-    bOK = m_Interrupt.Initialize ();
+    bOK = m_Screen.Initialize ();
   }
   if(!bOK) this->DieWithBlinkPattern(1);
 
   if (bOK)
   {
-    bOK = m_Screen.Initialize ();
+    bOK = m_Serial.Initialize (115200);
   }
   if(!bOK) this->DieWithBlinkPattern(2);
-
-  if (bOK)
-  {
-    bOK = m_Serial.Initialize (460800);
-  }
-  if(!bOK) this->DieWithBlinkPattern(3);
   
   if (bOK)
   {
@@ -76,6 +73,12 @@ boolean CKernel::Initialize (void)
     }
 
     bOK = m_Logger.Initialize (pTarget);
+  }
+  if(!bOK) this->DieWithBlinkPattern(3);
+
+  if (bOK)
+  {
+    bOK = m_Interrupt.Initialize ();
   }
   if(!bOK) this->DieWithBlinkPattern(4);
 
@@ -112,7 +115,10 @@ TShutdownMode CKernel::Run (void)
   // REQUIRED STEP: assign HAL to the user pointer
   u8g2_SetUserPtr(&m_u8g2, &m_u8hal); 
 
+  // REQUIRED STEP: set up Circle-specific callbacks
   u8g2_Setup_ssd1306_i2c_128x64_noname_f(&m_u8g2, U8G2_R0, u8x8_byte_arm_circle_hw_i2c, u8x8_arm_circle_gpio_and_delay);
+
+  // Now, use all your favorite general u8g2_* bindings!
   u8g2_InitDisplay(&m_u8g2);
   u8g2_SetPowerSave(&m_u8g2, 0);
   u8g2_ClearDisplay(&m_u8g2);
